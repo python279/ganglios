@@ -22,6 +22,8 @@ import errno
 import re
 import logging
 import shutil
+import gzip
+import StringIO, traceback
 
 __revision__ = '0'
 
@@ -33,6 +35,11 @@ formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr) 
 logger.setLevel(logging.DEBUG)
+
+def trace_log():
+    f = StringIO.StringIO()
+    traceback.print_exc(file=f)
+    logging.error(f.getvalue())
 
 def unionMetrics( curMetrics, hostFilePath ):
     '''When a single host is present in more than one gmond collector node
@@ -145,10 +152,19 @@ def storeXMLData(srcHosts, dataDir):
             # hostname is being used as the filename here
             targetfile = '%s/%s.xml' % (dataDir, host)
             try:
-                shutil.mv(tmpFile, targetfile)
-                os.chmod(targetfile, 0644)
+                f_in = gzip.open(tmpFile, 'rb')
+                f_out = open(targetfile, 'w')
+                shutil.copyfileobj(f_in, f_out)
+                f_out.close()
+                f_in.close()
+                os.remove(tmpFile)
             except:
-                logger.critical("Failed to rename %s to %s" % (tmpFile, targetfile))
+                trace_log()
+                try:
+                    shutil.mv(tmpFile, targetfile)
+                    os.chmod(targetfile, 0644)
+                except:
+                    logger.critical("Failed to rename %s to %s" % (tmpFile, targetfile))
 
             logger.info('parsing %s: [OK]' % host)
         except Exception, e:
@@ -233,7 +249,7 @@ def main():
 
     # logging at level crit to give verification that the process is running, but not spew too much.
     # this should probably be changed to logger.info
-    logger.critical('Starting ganglia_parser')
+    logger.info('Starting ganglia_parser')
     try:
         os.makedirs(dataDir,2755)
     except OSError, e:
@@ -244,7 +260,7 @@ def main():
 
     storeXMLData(listXMLSources(), dataDir)
     splitXML(dataDir)
-    logger.critical('Finished ganglia_parser')
+    logger.info('Finished ganglia_parser')
 
 
 if __name__ == "__main__":
