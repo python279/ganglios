@@ -98,13 +98,13 @@ so passing 'gt 10' means CRIT if the host's value greater than 10
 
     if getattr(operator, op)(cur_val, crit_value):
         status = 2
-        output = "CRITICAL: %s is %s (%s %s)" % (metric, cur_val, op, crit_value)
+        output = "CRITICAL: %s/%s is %s (%s %s)" % (numerator, metric, cur_val, op, crit_value)
     elif getattr(operator, op)(cur_val, warn_value):
         status = 1
-        output = "WARN: %s is %s (%s %s)" % (metric, cur_val, op, warn_value)
+        output = "WARN: %s/%s is %s (%s %s)" % (numerator, metric, cur_val, op, warn_value)
     else:
         status = 0
-        output = "OK: %s is %s" % (metric, cur_val)
+        output = "OK: %s/%s is %s" % (numerator, metric, cur_val)
 
     sys.stdout.write(output)
     ganglios.done(status)
